@@ -87,7 +87,14 @@ Every session update must satisfy the following checks:
 | Context tracking fields are consistently maintained | Evidence of regular updates to tracking sections | **Pass** |
 
 ---
+## Atlas Doctor
 
+Health of the Atlas integration itself. Checked 2026-10-14.
+
+| # | Issue | Severity | Status | Suggested Fix | Last Checked |
+|---|---|---|---|---|---|
+| D16 | `~/.config/opencode/commands/atlas.md` hardcodes `/Users/emir/.config/opencode/skills/atlas/SKILL.md`, which the Atlas spec forbids in a wrapper. | info | ignored | **Accepted by the user, deliberately.** The hardcoded path is how OpenCode resolves this skill without matching another one. `<workspace>/SKILL.md` remains the pristine source of truth for cloning and for any other host; the OpenCode copy is a host-local install and is intentionally not byte-identical. Re-check only if `/atlas` stops resolving the skill. | 2026-10-14 |
+| D20 | **Skill copy drift:** `~/.config/opencode/skills/atlas/SKILL.md` differs from `<workspace>/SKILL.md`. The host copy lost the "Automated audit script" paragraph (lines 234-237 in workspace). Per Atlas spec, host copy must stay byte-identical to workspace original. | warn | open | Re-install: copy `<workspace>/SKILL.md` → host skills dir. Or edit workspace original and re-install; never edit host copy directly. | 2026-10-14 |
 ## Decisions
 - **If updating context, then always modify ATLAS.md** - Never rely on external tracking systems; the ATLAS.md file is the single source of truth
 - **If making a claim, then provide evidence** - Unsupported statements must be clearly marked as hypotheses or opinions
