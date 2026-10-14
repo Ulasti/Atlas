@@ -20,20 +20,16 @@ Local-first project context tracking system that enables agents and humans to:
 | Last worked on | 2026-10-14 |
 | Branch | `main` |
 | needs_review | false |
-| Where I left off | Initialized Atlas context tracker project to track Atlas skill usage. Created basic directory structure and git repository. Ready to begin tracking Atlas development cycles and implementing context tracking mechanisms. |
+| Where I left off | Initialized Atlas context tracker project for developing the Atlas skill itself. Added SKILL.md source code, directory structure, and git repository. Ready to begin developing Atlas through Atlas. |
 
 ---
 
 ## Next Steps
-1. **Define core context tracking fields** - Specify what context data to capture for each project session
-2. **Create standard ATLAS.md template** - Establish living ruleset format that evolves with project
-3. **Implement status reporting mechanism** - Ensure human-readable updates to Status section
-4. **Establish fact-check protocol** - Create process for validating claims with evidence and mathematical reasoning
-5. **Design extension points** - Prepare structure for later kanban/multi-project tracking features
-
----
-
-## Blockers
+1. **Begin Atlas skill development** - Start making improvements to the SKILL.md file based on identified needs and feedback
+2. **Implement status reporting mechanism** - Ensure human-readable updates to Status section
+3. **Establish fact-check protocol** - Create process for validating claims with evidence and mathematical reasoning
+4. **Design extension points** - Prepare structure for later kanban/multi-project tracking features
+5. **Document development process** - Record how we develop and improve the skill through this tracking system
 - None currently - starting with clean slate
 
 ---
@@ -44,16 +40,15 @@ Everything load-bearing lives inside the project directory. The single source of
 | Input | Location | Committed |
 |-------|----------|-----------|
 | Project rulebook and context tracker | `ATLAS.md` | yes |
+| Skill source code (when developing Atlas) | `SKILL.md` | yes |
 | Toolbox scripts and templates | `files/` | yes |
 | Design specs and documentation | `docs/` | yes |
 | Verifiable evidence (logs, test results, etc.) | `evidence/` | yes |
 | Source code (if any) | `src/` | yes |
 | Test files | `tests/` | yes |
 | Git repository | `.git/` | yes |
-
----
-
-## How to Run / Track
+| Skill source code (when developing Atlas) |  | yes |
+|---|---|---|
 1. **Read ATLAS.md** - Always start by reading this file to understand current context and ruleset
 2. **Update ATLAS.md** - As work progresses, update the Status, Where I left off, and Next Steps sections
 3. **Gather evidence** - Place verifiable evidence in the evidence/ directory (build logs, test results, measurements, etc.)
@@ -105,10 +100,10 @@ Health of the Atlas integration itself. Checked 2026-10-14.
 ---
 
 ## Planning Context
-This project exists to serve as a living demonstration and validation of the Atlas system itself. By tracking Atlas usage through Atlas, we create a virtuous cycle where:
-1. The system improves through self-observation
-2. Effectiveness is validated through fact-based self-analysis
-3. Usability is tested through actual dogfooding
-4. Improvements are grounded in mathematical standards and evidence
+This project exists to develop and improve the Atlas skill/system itself. By developing Atlas through Atlas, we create a virtuous cycle where:
+1. The skill improves through self-directed development
+2. Effectiveness is validated through fact-based self-analysis and testing
+3. Leadership is demonstrated through actual dogfooding of our own tools
+4. Improvements are grounded in mathematical standards, evidence, and user feedback
 
-The ultimate goal is to create a robust, self-improving project tracking system that helps agents and humans manage complex workflows with clarity and accountability.
+The ultimate goal is to create a robust, continuously improving project tracking system that helps agents and humans manage complex workflows with clarity and accountability, while practicing what we preach.
