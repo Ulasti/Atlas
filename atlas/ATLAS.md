@@ -30,7 +30,7 @@ Local-first project context tracking system that enables agents and humans to:
 | Last worked on | 2026-10-16 |
 | Branch | `atlas/atlas-upgrade-v2` |
 | needs_review | true |
-| Where I left off | Upgraded to the v2 ATLAS.md sections (Original Intent, Last Failure, Rule Ledger, Agent Instructions), fixed Status.Branch, then restored the root layout: `SKILL.md` moved out of `Atlas-source/` back to the repo root and the stale root `ATLAS.md` deletion staged, so only Atlas-owned files live in `atlas/`. Repo base is `master` (no `dev`/`main`); work is on `atlas/atlas-upgrade-v2`. |
+| Where I left off | Upgraded to the v2 ATLAS.md sections (Original Intent, Last Failure, Rule Ledger, Agent Instructions), fixed Status.Branch, then restored the root layout: `SKILL.md` moved out of `Atlas-source/` back to the repo root and the stale root `ATLAS.md` deletion staged, so only Atlas-owned files live in `atlas/`. Then synced `SKILL.md` to 2.1.0 from the workspace. Repo base is `master` (no `dev`/`main`); work is on `atlas/atlas-upgrade-v2`. |
 
 ---
 
@@ -111,7 +111,7 @@ Health of the Atlas integration itself. Checked 2026-10-16.
 | D24 | Uncommitted working-tree changes: `D ATLAS.md` (root file moved into `atlas/`, deletion never committed) and `M Atlas-source/SKILL.md`. | warn | fixed | Both resolved by the layout restore: the root `ATLAS.md` deletion is staged and `Atlas-source/SKILL.md` is moved to the repo root as `SKILL.md`. Evidence: `evidence/atlas-layout-restructure.txt`. | 2026-10-16 |
 | D25 | `atlas/evidence/` is empty while the Definition of Done cites evidence files. | warn | partially addressed | `evidence/atlas-layout-restructure.txt` now backs the layout rows, and every DoD row with no real file is marked **Unverified** instead of Pass. The remaining rows need real evidence or removal. | 2026-10-16 |
 | D26 | Legacy `atlas/` layout (ATLAS.md, evidence/, docs/, files/ live under `atlas/`). | info | fixed | Resolved by SKILL 2.1.0: the `atlas/` folder is now the canonical v2 layout, not legacy. This project already matches it. | 2026-10-16 |
-| D27 | The project copy of the skill is a version behind: `SKILL.md` (repo root) is 2.0.0 (sha256 `822765b2…`), while `<workspace>/SKILL.md` and the host copy are 2.1.0 (`0fae35d6…`). | warn | open | Sync `SKILL.md` from `<workspace>/SKILL.md`, or restore it deliberately if the lag is intentional. Left unchanged here to preserve the user's uncommitted content. | 2026-10-16 |
+| D27 | The project copy of the skill was a version behind: `SKILL.md` was 2.0.0 (sha256 `822765b2…`), while `<workspace>/SKILL.md` and the host copy are 2.1.0 (`0fae35d6…`). | warn | fixed | `SKILL.md` synced from `<workspace>/SKILL.md`; now byte-identical at sha256 `0fae35d6…` (verified 2026-10-16). The 2.0 copy is kept in the backup. | 2026-10-16 |
 
 ---
 

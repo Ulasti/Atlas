@@ -38,11 +38,11 @@ ALSO FIXED
   - DoD rows with no evidence file marked **Unverified** instead of a bare
     **Pass** (this project's rule: never report an assumed pass).
 
-OPEN — D27
-  `SKILL.md` (repo root) is version 2.0.0 (sha256 822765b2…), one version
-  behind `<workspace>/SKILL.md` and the host copy, which are 2.1.0
-  (0fae35d6…). Left unchanged to preserve the user's uncommitted content.
-  Sync from `<workspace>/SKILL.md`, or keep deliberately.
+RESOLVED — D27
+  `SKILL.md` (repo root) synced from `<workspace>/SKILL.md`: 2.0.0 (822765b2…)
+  -> 2.1.0 (0fae35d6…, 48981 bytes). Now byte-identical to `<workspace>/SKILL.md`
+  and the host copy. The 2.0 copy is preserved in the backup dir above
+  (SKILL.md.worktree-version).
 
 VERIFICATION
   git status: only the intended changes (SKILL.md rename, staged root ATLAS.md

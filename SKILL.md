@@ -19,6 +19,8 @@ When you see `/atlas`, determine the subcommand and run it. No preamble.
 
 **Step 0 of every invocation:** read `Config/profile.md` in the Atlas workspace. It holds the level (`lite`, `full` or `pro`). If the workspace or the profile is missing, this is first boot (see Levels).
 
+**The atlas folder.** Everything Atlas owns inside a project lives in `<project>/atlas/`: `ATLAS.md`, `evidence/`, `docs/`, `files/`. The rest of the project root belongs to the user and is laid out as its framework expects (Swift, Flutter, Node, anything); Atlas adds nothing there. Unless a path says otherwise, `ATLAS.md`, `evidence/`, `docs/` and `files/` in this file mean the ones inside `atlas/`. Paths written inside `ATLAS.md` are relative to `atlas/`; commit messages and chat replies use repo-root paths (`atlas/evidence/tests.log`). **Three announced exceptions:** the pointer block in the project's `AGENTS.md` and `CLAUDE.md` (Full only; hosts read those from the project root), a `.gitignore` line for a heavy asset (show it and ask first), and code changes made as normal project work.
+
 > ### STOP: DELETION SAFETY (non-negotiable, every agent and subagent)
 >
 > **Never delete, remove, empty, truncate, or wholesale-overwrite any file, directory, branch, project, or index without the user's explicit consent for that exact target.**
@@ -27,7 +29,7 @@ When you see `/atlas`, determine the subcommand and run it. No preamble.
 
 ## Metadata
 
-Version 2.0.0 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
+Version 2.1.0 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
 
 ## How to read this file
 
@@ -54,7 +56,7 @@ One file, three levels. The profile records the level, and you can change it any
 
 | Level | What it is | Enforcement |
 |---|---|---|
-| **Lite** (recommended start) | Command-only. This one file plus the workspace. Nothing is installed in your projects or agent config. | Evidence Gate runs only when Atlas was named at session start. |
+| **Lite** (recommended start) | Command-only. This one file plus the workspace. Nothing is installed in your agent config, and each project gets only an `atlas/` folder. | Evidence Gate runs only when Atlas was named at session start. |
 | **Full** | Splits this file into a lean core plus on-demand spec files, installs hooks and per-project pointer files so any project under Atlas is treated by the Atlas ruleset automatically. | Hooks and pointers enforce the Evidence Gate. |
 | **Pro** | Not built yet. Planned browser dashboard. See the `pro` section. | n/a |
 
@@ -89,7 +91,7 @@ If `Config/` and `Projects/` already exist, this is an upgrade: follow *Existing
 3. Write embedded assets that are missing. For files that exist and differ, show the diff and ask; user-owned files are never overwritten (see `materialize`).
 4. List obsolete 1.x files (`Config/schema/`, `Config/scripts/atlas-registry-validate.sh`, `Config/templates/GLOBAL.md`) and offer to **move** them to `Config/legacy-1x/`. Never delete.
 5. Rebuild `Config/registry.json` from the projects' `ATLAS.md` files.
-6. For each project, run the Doctor checks and propose adding the v2 sections its `ATLAS.md` lacks (Original Intent, Last Failure, Rule Ledger). Never invent Original Intent: ask. A legacy `atlas/` layout stays valid.
+6. For each project, run the Doctor checks and propose adding the v2 sections its `ATLAS.md` lacks (Original Intent, Last Failure, Rule Ledger). Never invent Original Intent: ask. Projects that already use an `atlas/` folder match the v2 layout; a root-level `ATLAS.md` is legacy, so offer to move it into `atlas/`.
 
 ### Upgrade nudge
 
@@ -118,9 +120,9 @@ With no argument, show the current level and what changes at the other levels. W
 
 If a command needs a project and none was given, list the projects in the registry and ask which.
 
-**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/`, `git init -b main`, branch `dev`, `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, `files/` with `INDEX.md`. Register it. At Full, also write the pointer files (`full-setup`).
+**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/` (the project's own scaffold is the user's: ask whether to create it with their framework's tool, then leave it alone), `git init -b main`, branch `dev`, and an `atlas/` folder holding `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, and `files/` with `INDEX.md`. Register it. At Full, also write the pointer files (`full-setup`).
 
-**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `ATLAS.md` if missing, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A legacy `atlas/ATLAS.md` layout stays valid; offer migration to the root layout.
+**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `atlas/` and `atlas/ATLAS.md` if missing and touch nothing else in the project, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A root-level `ATLAS.md`, `evidence/`, `docs/` or `files/` (Atlas 1.x) stays valid; offer to move them into `atlas/` (move, never delete).
 
 **resume.** Do not re-interview. Read `ATLAS.md`, then `Config/GLOBAL.md`. Run the Doctor checks. Compare Next Steps against Original Intent and Last Failure, and flag drift. Present a plan and **wait for confirmation** before changing anything.
 
@@ -155,7 +157,7 @@ Before **every commit** and before **ending the session**:
 <!-- ATLAS-SECTION id="atlas-md" tier="hot" -->
 ## ATLAS.md
 
-Every project has an `ATLAS.md` at its root: the single source of truth, read before any action. The template is embedded below (`Config/templates/ATLAS.md`). Unused sections say "N/A" and are never removed.
+Every project has an `ATLAS.md` at `atlas/ATLAS.md`: the single source of truth, read before any action. The template is embedded below (`Config/templates/ATLAS.md`). Unused sections say "N/A" and are never removed.
 
 | Section | Rule |
 |---|---|
@@ -219,7 +221,8 @@ A build log is not proof of a compile, and a gate must be shown to fail: see `ve
 │   ├── templates/            # ATLAS.md, INDEX.md, pointer.md
 │   ├── scripts/              # audit script; hooks/ at Full
 │   └── spec/                 # Full only: cold sections as separate files
-└── Projects/<kebab-name>/    # ATLAS.md, evidence/, docs/, files/, .git, source
+└── Projects/<name>/          # the user's project, laid out as its framework expects, plus .git
+    └── atlas/                # everything Atlas owns: ATLAS.md, evidence/, docs/, files/
 ```
 
 `registry.json` shape: `{generated_at, workspace, projects:[{name, path, status, needs_review, last_worked_on, branch}]}`. It is derived from every `ATLAS.md`. If it disagrees with a fresh rebuild, regenerate it and log a Doctor warning.
@@ -312,7 +315,7 @@ Also check for assets that escaped into cache or app-data directories outside th
 
 **Relocation rules.** Move the asset into the project (for example `assets/`) or reconfigure the path. For ML caches prefer relocating the cache (e.g. point the tool's cache variable, such as `HF_HOME`, at an in-project directory) over copying weights. Prefer configuring a path over moving data. If an asset cannot move (system framework, licensed content), record it in Inputs & Locations as an external dependency with its exact path and acquisition steps. **Never delete the original**; move, verify, and only propose removal after the project is confirmed working.
 
-**Large binaries.** Files over ~50 MB, and any model or dataset directory, stay local and **gitignored**, with a committed placeholder. **Every gitignored heavy asset must be reported to the user** (path, size, why). Where a placeholder cannot work, commit `.gitkeep` plus `assets/MANIFEST.md` with filename, size, SHA-256, source URL and the re-acquire command. Only commit a heavy asset if the user directly asks, after you confirm size and remote impact. Never upload to a third-party remote without explicit instruction. Small artifacts (icons, fonts, fixtures) are committed.
+**Large binaries.** Files over ~50 MB, and any model or dataset directory, stay local and **gitignored** (the `.gitignore` line is an announced exception to the atlas-folder rule: show it and ask), with a committed placeholder. **Every gitignored heavy asset must be reported to the user** (path, size, why). Where a placeholder cannot work, commit `.gitkeep` plus `atlas/manifest.md` with filename, size, SHA-256, source URL and the re-acquire command. Only commit a heavy asset if the user directly asks, after you confirm size and remote impact. Never upload to a third-party remote without explicit instruction. Small artifacts (icons, fonts, fixtures) are committed.
 
 **Report.** Save the table `Asset | Location | In project? | Size | Action | Gitignored?` to `evidence/self-containment.txt`. Anything left outside goes into Atlas Doctor as `warn` or `error`. Do not mark integration complete while a load-bearing asset lives outside the project.
 <!-- /ATLAS-SECTION -->
@@ -569,11 +572,11 @@ Read this file first. Update Status, Last Failure, Next Steps, Blockers and evid
 ````markdown
 <!-- atlas:start -->
 ## Atlas
-This project is managed by Atlas. Read `ATLAS.md` first, then `Config/GLOBAL.md` in the Atlas workspace.
+This project is managed by Atlas. Read `atlas/ATLAS.md` first, then `Config/GLOBAL.md` in the Atlas workspace.
 
 Evidence Gate, before every commit and before ending the session:
-1. Run the relevant DoD checks and write proof under `evidence/`.
-2. Update `ATLAS.md`: Status, Last Failure, Next Steps, Blockers.
+1. Run the relevant DoD checks and write proof under `atlas/evidence/`.
+2. Update `atlas/ATLAS.md`: Status, Last Failure, Next Steps, Blockers.
 3. Commit as `type(scope): description - evidence: <path>`.
 4. End your reply with: `Evidence: <paths> | Pass N | Fail N | Unverified N`.
 
@@ -588,21 +591,22 @@ Work on `atlas/<feature>` branches; never push to `dev` or `main`. Never delete 
 # Searches for home-directory APIs and hard-coded user paths (not just literal strings),
 # classifies each hit, flags oversized files, and writes evidence/self-containment.txt.
 # Exit code: 0 = no violations, 1 = violations found, 2 = bad usage.
-# Not scanned (stated in the evidence): *.md docs, evidence/, .git, build and vendor dirs.
+# Not scanned (stated in the evidence): *.md docs, atlas/, evidence/, .git, build and vendor dirs.
+# Writes atlas/evidence/self-containment.txt inside the project.
 # Extra directories to skip for your stack: ATLAS_AUDIT_EXCLUDE=DerivedData,Pods,.build (comma-separated).
 set -uo pipefail   # deliberately no -e: counters and greps must not abort the run
 
 root="${1:?Usage: $0 <project-root>}"
 [ -d "$root" ] || { echo "not a directory: $root" >&2; exit 2; }
-mkdir -p "$root/evidence"
-out="$root/evidence/self-containment.txt"
+mkdir -p "$root/atlas/evidence"
+out="$root/atlas/evidence/self-containment.txt"
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 api='homeDirectoryForCurrentUser|NSHomeDirectory\(|homeDirectory|Path\.home\(|expanduser|getenv\(.?HOME|getpwuid|USERPROFILE|user_home_dir|home_dir\(|user\.home|homedir\(|process\.env\.HOME|\$HOME|~/|/Users/[^/ ]+/|/home/[^/ ]+/'
 asset='models?|weights|checkpoints?|safetensors|onnx|gguf|mlpackage|\.cache|huggingface|ollama|assets|resources|datasets?|fonts?|icons?'
 userfacing='Desktop|Downloads|Documents|Applications'
 
-excl=(--exclude-dir=.git --exclude-dir=evidence --exclude-dir=node_modules --exclude-dir=.venv
+excl=(--exclude-dir=.git --exclude-dir=atlas --exclude-dir=evidence --exclude-dir=node_modules --exclude-dir=.venv
       --exclude-dir=venv --exclude-dir=__pycache__ --exclude-dir=build --exclude-dir=dist
       --exclude-dir=target --exclude-dir=vendor --exclude-dir=.gradle)
 IFS=',' read -r -a extra <<< "${ATLAS_AUDIT_EXCLUDE:-}"
@@ -641,7 +645,7 @@ done < <(find "$root" -type f -size +50M -not -path '*/.git/*' 2>/dev/null)
   echo "# Self-Containment Audit"
   echo "Project: $root"
   echo "Timestamp: $ts"
-  echo "Not scanned: *.md docs, evidence/, .git, build and vendor directories."
+  echo "Not scanned: *.md docs, atlas/, evidence/, .git, build and vendor directories."
   echo
   echo "## Home-directory API and user-path hits"
   echo "| File | Line | Class | Line content | Note |"
@@ -714,9 +718,9 @@ done
 root=$(dirname "$f"); [ "$(basename "$root")" = "atlas" ] && root=$(dirname "$root")
 git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 
-changed=$(git -C "$root" status --porcelain 2>/dev/null)
+changed=$(git -C "$root" status --porcelain -uall 2>/dev/null)
 [ -n "$changed" ] || exit 0
-code=$(printf '%s\n' "$changed" | grep -vE '(^|[ /])(ATLAS\.md|AGENTS\.md|CLAUDE\.md|evidence/)' || true)
+code=$(printf '%s\n' "$changed" | grep -vE '(^|[ /])(ATLAS\.md|AGENTS\.md|CLAUDE\.md|evidence/|atlas/)' || true)
 [ -n "$code" ] || exit 0
 meta=$(printf '%s\n' "$changed" | grep -E '(^|[ /])(ATLAS\.md|evidence/)' || true)
 [ -z "$meta" ] || exit 0
