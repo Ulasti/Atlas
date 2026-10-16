@@ -30,7 +30,7 @@ Local-first project context tracking system that enables agents and humans to:
 | Last worked on | 2026-10-16 |
 | Branch | `atlas/atlas-upgrade-v2` |
 | needs_review | true |
-| Where I left off | Upgraded to the v2 ATLAS.md sections (Original Intent, Last Failure, Rule Ledger, Agent Instructions), fixed Status.Branch, then restored the root layout: `SKILL.md` moved out of `Atlas-source/` back to the repo root and the stale root `ATLAS.md` deletion staged, so only Atlas-owned files live in `atlas/`. Then synced `SKILL.md` to 2.1.0 from the workspace. Repo base is `master` (no `dev`/`main`); work is on `atlas/atlas-upgrade-v2`. |
+| Where I left off | Upgraded to the v2 ATLAS.md sections (Original Intent, Last Failure, Rule Ledger, Agent Instructions), fixed Status.Branch, then restored the root layout: `SKILL.md` moved out of `Atlas-source/` back to the repo root and the stale root `ATLAS.md` deletion staged, so only Atlas-owned files live in `atlas/`. Then synced `SKILL.md` to 2.1.0 from the workspace. Merged onto `master` and pushed to `origin/master` (2026-10-16). Repo base is `master` (no `dev`/`main`). |
 
 ---
 
