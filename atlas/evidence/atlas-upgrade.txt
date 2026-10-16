@@ -1,0 +1,36 @@
+# Atlas v2 upgrade — Atlas project
+Date: 2026-10-16T02:04:19Z
+Branch: atlas/atlas-upgrade-v2
+Base commit: fa0d2c9 (feat: restructure project to atlas/ layout with re)
+
+## What changed (docs-only: atlas/ATLAS.md)
+- Added v2 sections: Original Intent, Last Failure, Rule Ledger, Agent Instructions.
+- Set Status.Branch to the real branch (master).
+- Fixed the malformed Inputs & Locations table; removed a stray Next Steps bullet.
+- Doctor: D20 corrected to fixed; added D21-D26.
+
+## Verification (commands run)
+$ git rev-parse --abbrev-ref HEAD
+atlas/atlas-upgrade-v2
+$ git branch -a
+* atlas/atlas-upgrade-v2
+  master
+  remotes/origin/master
+$ git remote -v
+origin	https://github.com/Ulasti/Atlas.git (fetch)
+origin	https://github.com/Ulasti/Atlas.git (push)
+$ git status --porcelain   (pre-existing user WIP left untouched)
+ D ATLAS.md
+ M Atlas-source/SKILL.md
+ M atlas/ATLAS.md
+?? .DS_Store
+?? Atlas-source/.DS_Store
+?? atlas/.DS_Store
+?? atlas/evidence/
+
+## DoD for this change (docs-only: no source touched)
+| Check | Result | Falsifier |
+|---|---|---|
+| ATLAS.md status/branch current | Pass | fails if Status.Branch != atlas/atlas-upgrade-v2 |
+| No secrets introduced | Pass | fails if the diff contains a key/token |
+| Other DoD rows | N/A | no source changed in this commit |
