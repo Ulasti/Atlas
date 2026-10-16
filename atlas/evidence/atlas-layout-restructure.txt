@@ -1,0 +1,50 @@
+Atlas layout restore — Atlas project
+Date: 2026-10-16
+Branch: atlas/atlas-upgrade-v2
+Doctor: D24 (uncommitted move), D25 (empty evidence), D26 (legacy layout), D27 (skill version lag)
+
+WHY
+SKILL 2.1.0 makes `<project>/atlas/` the canonical layout: only Atlas-owned
+files (ATLAS.md, evidence/, docs/, files/) live there, and everything the
+project's own tooling expects stays at the repo root. The earlier commit
+`fa0d2c9` ("restructure project to atlas/ layout with reflex-source for source
+code") had also wrapped the skill source in `Atlas-source/`, which is not the
+root style this project started with (commit `cbb053a` added `SKILL.md` at the
+repo root).
+
+WHAT MOVED (git mv; nothing deleted)
+  git mv Atlas-source/SKILL.md  SKILL.md            (back to the repo root)
+  moved aside (not deleted): the emptied `Atlas-source/` folder
+  staged the intended deletion of the stale root `ATLAS.md` (v1 content; the
+  live rulebook is `atlas/ATLAS.md`). The v1 file is preserved in git history
+  (HEAD~1:ATLAS.md) and copied to the backup below.
+
+Backups:
+  /private/var/folders/xr/t6xp49m55_51mbsshr3fnykw0000gn/T/opencode/proj-backups/atlas-project-restructure-20261016T022355Z/
+  (SKILL.md HEAD version, SKILL.md worktree version, root ATLAS.md v1)
+
+RESULT
+  Atlas/
+  ├── SKILL.md        (was Atlas-source/SKILL.md)
+  ├── tests/
+  ├── README.md
+  └── atlas/
+      ├── ATLAS.md  evidence/  docs/  files/
+
+ALSO FIXED
+  - Doctor D26 reworded: the `atlas/` layout is canonical in 2.1.0, not legacy.
+  - Doctor D16 path corrected (`command/` -> `commands/`).
+  - Doctor D20 sha updated to 0fae35d6 (SKILL 2.1.0).
+  - DoD rows with no evidence file marked **Unverified** instead of a bare
+    **Pass** (this project's rule: never report an assumed pass).
+
+OPEN — D27
+  `SKILL.md` (repo root) is version 2.0.0 (sha256 822765b2…), one version
+  behind `<workspace>/SKILL.md` and the host copy, which are 2.1.0
+  (0fae35d6…). Left unchanged to preserve the user's uncommitted content.
+  Sync from `<workspace>/SKILL.md`, or keep deliberately.
+
+VERIFICATION
+  git status: only the intended changes (SKILL.md rename, staged root ATLAS.md
+  deletion, ATLAS.md edits, this evidence file). `ls` confirms SKILL.md at the
+  repo root and no `Atlas-source/`.
