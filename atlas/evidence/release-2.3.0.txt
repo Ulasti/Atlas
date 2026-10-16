@@ -1,0 +1,26 @@
+Atlas 2.3.0 release - update section hardening
+Date: 2026-10-16
+Repo: Ulasti/Atlas (local: Documents/Atlas/Projects/atlas)
+From: 2.2.0 -> to: 2.3.0 (minor)
+
+Change
+Apply the reviewed update-section fixes and bump the Metadata version.
+
+Edits in SKILL.md
+- Metadata: Version 2.2.0 -> 2.3.0; profile example version -> 2.3.0.
+- Commands table: documented `update [path-or-url] [--sha256 <hash>]`.
+- Update intro: the path/url form now reads the target's Metadata version and reuses the step-3 compare rules.
+- Update step 0 (new): baseline self-heal. If Config/profile.md is absent, refuse (1.x). If the profile lacks `version`, read it from the installed <workspace>/SKILL.md Metadata, write it, and set source_sha256 to that file's sha256.
+- Update step 5: integrity accepts the path/url form's declared version.
+- Update: added "Publishing a version (author side)" (bump Metadata, add Changelog entry, commit, tag, push tag).
+- Changelog: every version bump must add an entry; added the 2.3.0 entry (no migration).
+
+Verify
+$ grep -n 'Version 2' SKILL.md      -> Version 2.3.0
+$ grep -c 'ATLAS-SECTION id=' SKILL.md -> 17 (unchanged; no section added/removed)
+$ shasum -a 256 SKILL.md            -> 03e299614ef847bfef314aa87a82310d1f7650a828eb039beeab7217163f3e69
+tagged file sha256:                 -> 03e299614ef847bfef314aa87a82310d1f7650a828eb039beeab7217163f3e69 (verified after tag push)
+tag: v2.3.0 (annotated)
+
+Result
+A 2.2.0 workspace running `/atlas update` detects v2.3.0, fetches the tag, and plans the section differ; the tagged SKILL.md carries Version 2.3.0.
