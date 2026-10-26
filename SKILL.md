@@ -29,7 +29,7 @@ When you see `/atlas`, determine the subcommand and run it. No preamble.
 
 ## Metadata
 
-Version 2.5.0 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
+Version 2.5.5 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
 
 ## How to read this file
 
@@ -140,9 +140,9 @@ With no argument, show the current level and what changes at the other levels. W
 
 If a command needs a project and none was given, list the projects in the registry and ask which.
 
-**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/` (the project's own scaffold is the user's: ask whether to create it with their framework's tool, then leave it alone), `git init -b main`, branch `dev`, and an `atlas/` folder holding `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, and `files/` with `INDEX.md`. Register it. At Full, also write the pointer files (`recipe-full`).
+**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/` (the project's own scaffold is the user's: ask whether to create it with their framework's tool, then leave it alone), `git init -b main`, branch `dev`, and an `atlas/` folder holding `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, and `files/` with `INDEX.md`. **Enforce project layout (see Project Layout):** if scaffolding creates a single wrapper directory containing the entire project, propose flattening to repo root with consent before registering branches/finalizing. Register it. At Full, also write the pointer files (`recipe-full`).
 
-**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `atlas/` and `atlas/ATLAS.md` if missing and touch nothing else in the project, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A root-level `ATLAS.md`, `evidence/`, `docs/` or `files/` (Atlas 1.x) stays valid; offer to move them into `atlas/` (move, never delete).
+**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `atlas/` and `atlas/ATLAS.md` if missing and touch nothing else in the project, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. **Enforce project layout (see Project Layout):** detect nested wrapper directories containing the entire project; if found, add to Atlas Doctor as `error` with a concrete move plan and require explicit consent before moving anything. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A root-level `ATLAS.md`, `evidence/`, `docs/` or `files/` (Atlas 1.x) stays valid; offer to move them into `atlas/` (move, never delete).
 
 **resume.** Do not re-interview. Read `ATLAS.md`, then `Config/GLOBAL.md`. Run the Doctor checks. Compare Next Steps against Original Intent and Last Failure, and flag drift. Present a plan and **wait for confirmation** before changing anything.
 
@@ -150,7 +150,7 @@ If a command needs a project and none was given, list the projects in the regist
 
 **wrap.** The end-of-session ritual, usable at every level. (1) Run the Evidence Gate. (2) Write the handoff into `ATLAS.md`: Status, Where I left off (1 to 3 sentences), **Last Failure** (verbatim error, command, date, or "none"), Next Steps, Blockers. (3) For each mistake or surprise this session, propose a Rule Ledger entry with its evidence; ask once, in a batch, and add approved ones as `unproven`. If a rule already exists in two or more projects, propose promoting it to `GLOBAL.md`. (4) Commit per the branch strategy and report.
 
-**audit.** Audit this skill, templates, `GLOBAL.md` and the target project's `ATLAS.md` for drift. Propose concrete edits with reasoning. Never edit `<workspace>/SKILL.md` without the user's approval of the specific diff. Must attempt falsification (`verification-integrity`).
+**audit.** Audit this skill, templates, `GLOBAL.md` and the target project's `ATLAS.md` for drift. **Always check project layout (see Project Layout):** detect nested wrapper directories containing the entire project; if found, add/update Atlas Doctor entry as `error` with concrete move plan and require explicit consent before moving. Propose concrete edits with reasoning. Never edit `<workspace>/SKILL.md` without the user's approval of the specific diff. Must attempt falsification (`verification-integrity`).
 
 **maintain.** Audit the toolbox (`files/INDEX.md`), DoD and rulebook. Review the Rule Ledger: rules with no evidence, rules that never fire, rules duplicated across projects. Read `toolbox` first.
 
@@ -216,6 +216,40 @@ Enforced for every project with a git repo.
 A build log is not proof of a compile, and a gate must be shown to fail: see `verification-integrity`.
 <!-- /ATLAS-SECTION -->
 
+<!-- ATLAS-SECTION id="layout" tier="hot" -->
+## Project Layout (enforced)
+
+**Canonical layout for every project under Atlas.** This is enforced by `init`, `integrate`, and checked by `audit`. Applies to all levels (Lite, Full, Pro).
+
+- **Repo root = project root.** `Projects/<kebab-name>/` is the git repository root. Run `git init -b main` at that root (or use an existing repo rooted there).
+- **Atlas folder at root.** `atlas/` must exist at the repo root containing `ATLAS.md`, `evidence/`, `docs/`, and `files/` (with `INDEX.md`). Atlas owns only `atlas/`; everything else belongs to the project.
+- **Agent files at root.** `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` live at the repo root if they exist or are created by the host. Do not move them into `atlas/`.
+- **Source at root.** Project source, configs, and build files go at the repo root as the language/framework expects. **No unnecessary wrapper directory.** A single top-level `<Kebab>App/`, `<kebab>App/`, or similarly-named directory that contains the *entire* project (all app sources, project files, configs) is a layout violation.
+- **Packages/submodules as-is.** `ReflexCore/`, `Packages/`, or other legitimate subdirectories stay where the framework expects; the rule targets a single scaffolder-created wrapper that contains everything else.
+
+### Nesting detection
+
+Flag a violation if **any** of the following hold:
+1. `atlas/` exists at repo root, but all recognizable project files (`.xcodeproj`, `project.yml`, `Package.swift`, `package.json`, `pyproject.toml`, `pubspec.yaml`, `build.gradle`, `CMakeLists.txt`, `Cargo.toml`, `go.mod`, `Sources/`, `app/`, etc.) live inside exactly one top-level directory `D/` and not at root.
+2. Repo root has no recognizable project files, while exactly one top-level directory `D/` contains them.
+3. There are no other top-level project directories except `atlas/`, agent files, hidden files (`.git`, `.gitignore`), and common metadata (`README.md`, `LICENSE`, `CHANGELOG.md`) — and `D/` appears to be the scaffolder output.
+
+### Flattening procedure (non-destructive, consent required)
+
+1. **Inventory.** List contents of the nested directory. Identify files that would conflict at root.
+2. **Ask first.** Present a concrete plan: `mv D/* <root>/` (and move dotfiles if intended), list conflicts, and ask for explicit consent to move each conflicting item or to proceed. Never move without consent.
+3. **Move, don't delete.** Move contents to repo root preserving paths. Do **not** `rm` the nested directory to "clean up" — only remove it if it becomes empty *and* the user explicitly consents to removing that exact empty directory. Follow Deletion Safety strictly.
+4. **Update references if needed.** If moving breaks paths in generated/config files (`project.yml`, Xcode project files), propose edits with diffs and ask before applying. Regenerate generated artifacts only if necessary.
+5. **Verify.** Ensure `atlas/` remains at root, git repo is at root, and the project still lays out as the framework expects.
+
+### Enforcement points
+
+- **`init <template> "description"`:** After scaffolding creates files, enforce layout before initializing branches/ATLAS.md registration. If the scaffolder created a nested app dir containing everything, propose flattening to root.
+- **`integrate <path> [name]`:** Scan layout non-destructively. If nested wrapper detected, add a `Project Layout` item to Atlas Doctor with severity `error`, include a concrete move plan, and propose fixes. Do not move files without explicit consent.
+- **`audit [project]`:** Always check project layout. For each violation, add/update an Atlas Doctor entry (`Issue: "Project layout: source nested under <dir>/"`, `Severity: error`, `Suggested Fix: move contents of <dir>/ to repo root`), report concrete moves, and require evidence of verification if moved.
+- **Atlas Doctor (always in scope):** Add **project layout** to the four checks (`self-containment`, `installation`, `registry drift`, `evidence freshness`) — now five in practice: include project layout. A project with nested source is not considered properly integrated until flattened or explicitly accepted with justification recorded in Atlas Doctor.
+<!-- /ATLAS-SECTION -->
+
 <!-- ATLAS-SECTION id="rules" tier="hot" -->
 ## Execution Rules
 
@@ -223,7 +257,7 @@ A build log is not proof of a compile, and a gate must be shown to fail: see `ve
 2. Evidence goes in `evidence/` and is referenced by path. Never fabricate it. Anything you could not check is recorded `Unverified`, never Pass. "Verified absent" and "not checked" are different findings.
 3. DoD enforcement: run every check, fix failures, run again, output one line per check with its evidence.
 4. Inherited results are not results. A prior agent's green DoD is a claim; re-derive it this session. Every `audit` attempts falsification before writing a verdict.
-5. Atlas Doctor: for any command that touches a project, inspect and update its Doctor table. Four checks are always in scope: **self-containment**, **installation** (level-aware, see `install`), **registry drift** (`registry.json` differs from a fresh rebuild), **evidence freshness** (every Pass has evidence from this session).
+5. Atlas Doctor: for any command that touches a project, inspect and update its Doctor table. Five checks are always in scope: **project layout** (see Project Layout), **self-containment**, **installation** (level-aware, see `install`), **registry drift** (`registry.json` differs from a fresh rebuild), **evidence freshness** (every Pass has evidence from this session).
 6. If this skill proves insufficient, behave as `audit`: propose the specific edit with reasoning.
 7. Never fabricate file writes. If you cannot write, say so and output the full contents, exact file name and destination path.
 8. Preserve exact formatting and indentation when editing markdown.
