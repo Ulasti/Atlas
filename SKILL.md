@@ -5,7 +5,7 @@ description: >
   convention. It keeps a developer's rules, intent, todos, last failures and evidence in plain
   files so any agent can resume a project exactly where it stopped, even months later.
   Triggers immediately on any message starting with /atlas. Commands: /atlas (first boot),
-  init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report. Always use this skill
+  init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report, board. Always use this skill
   when you see /atlas, no matter what follows. Also use it whenever the user says a project is
   managed by Atlas, or a project's AGENTS.md or CLAUDE.md points to Atlas.
 ---
@@ -29,11 +29,11 @@ When you see `/atlas`, determine the subcommand and run it. No preamble.
 
 ## Metadata
 
-Version 2.5.6 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
+Version 2.6.0 | Type: Skill | Scope: local-first, tool-agnostic | License: MIT
 
 ## How to read this file
 
-Sections are marked `ATLAS-SECTION` with a tier. **Hot** sections are read fully on every invocation. **Cold** sections are read only when their `when` attribute applies. Order runs from most used to least used. Embedded assets sit at the very end.
+Sections are marked `ATLAS-SECTION` with a tier. **Hot** sections are read fully on every invocation. **Cold** sections are read only when their `when` attribute applies. Order runs from most used to least used. Embedded assets sit at the very end and are **not** in a Lite host copy or a Full lean core: when a command needs one, read it from `<workspace>/SKILL.md` after the `## EMBEDDED ASSETS` heading, and never recreate one from memory.
 
 ## Principles
 
@@ -72,7 +72,9 @@ One file, three levels. The profile records the level, and you can change it any
 |---|---|---|
 | **Lite** (recommended start) | Command-only. This one file plus the workspace. Nothing is installed in your agent config, and each project gets only an `atlas/` folder. | Evidence Gate runs only when Atlas was named at session start. |
 | **Full** | Splits this file into a lean core plus on-demand spec files, installs hooks and per-project pointer files so any project under Atlas is treated by the Atlas ruleset automatically. | Hooks and pointers enforce the Evidence Gate. |
-| **Pro** | Not built yet. Planned browser dashboard. See `recipe-pro`. | n/a |
+| **Pro** | Full plus a plain-language task board (`atlas/tasks.md`) and a browser dashboard at `<workspace>/dashboard.html`. No server, no dependencies. See `recipe-pro`. | Same as Full; the Evidence Gate also refreshes the board. |
+
+The level is **workspace-wide**: it lives in `Config/profile.md` and applies to every project. Only writes inside an individual project (pointer blocks, `atlas/tasks.md`) are asked project by project.
 
 **The workspace original is never replaced.** `<workspace>/SKILL.md` is always the complete file with every section and every embedded asset, at every level. Only the *host copy* becomes lean at Full. `source_sha256` is the sha256 of that complete original, never of the lean core. If the original ever turns out lean (no `ATLAS-EMBED` blocks), stop and restore it from `Config/legacy/` before doing anything else.
 
@@ -83,10 +85,9 @@ level: lite            # lite | full | pro
 host: <claude-code|opencode|codex|other>
 workspace: <path>      # default ~/Documents/Atlas
 source_sha256: <sha256 of <workspace>/SKILL.md at last install or extraction>
-version: 2.5.0         # Atlas version this workspace runs (if missing, read it from <workspace>/SKILL.md Metadata and write it)
+version: 2.6.0         # Atlas version this workspace runs (if missing, read it from <workspace>/SKILL.md Metadata and write it)
 update_source: unset   # git repo URL for /atlas update; asked once on first use
 full_offered: false    # true once the Full upgrade has been mentioned
-pro_interest: false
 ```
 
 ### First boot (`/atlas` with no profile, no workspace, or an unrecognized command)
@@ -96,7 +97,7 @@ If `Config/` and `Projects/` already exist, this is an upgrade: follow *Existing
 1. Create the workspace: `Config/`, `Config/templates/`, `Config/scripts/`, `Projects/`. Use `~/Documents/Atlas/` unless the user names another path.
 2. `git init -b main` in the workspace if needed. Write the original file to `<workspace>/SKILL.md` (a copy of this file). Commit as "Atlas workspace bootstrap".
 3. Materialize the embedded assets (see `materialize`). Cold sections are read on demand, so read `install` now.
-4. Interview, **one question at a time**: (a) which agent host you use, (b) level: **Lite (recommended, press enter)**, Full, or Pro (not built yet, say so and stay on Lite), (c) optional standing personal rules, written into `Config/GLOBAL.md` under Personal Rules with "stated at setup" as their origin.
+4. Interview, **one question at a time**: (a) which agent host you use, (b) level: **Lite (recommended, press enter)**, Full, or Pro (Full plus a task board and dashboard; from Lite it is set up in one go, see `recipe-pro`), (c) optional standing personal rules, written into `Config/GLOBAL.md` under Personal Rules with "stated at setup" as their origin.
 5. Install for the host per the chosen level: read `install`, then follow `recipe-<level>`. Write `Config/profile.md`.
 6. Print a short onboarding guide: purpose, commands, `init` vs `integrate`, where files live. Do not write the guide to a file. Do not assume a project name. Suggest the next command.
 
@@ -117,7 +118,7 @@ After the first successful `init` or `integrate` at Lite, if `full_offered` is f
 
 ### `/atlas level [lite|full|pro]`
 
-With no argument, show the current level and what changes at the other levels. With an argument: read `recipe-<new level>` (and `recipe-lite` step 5 when leaving Full), show the exact list of files and config that will change, get consent, back up before changing, then update the profile and verify. `/atlas level <current level>` re-runs that level's recipe and its verify block as a repair. `pro` replies that it is under development, sets `pro_interest: true`, and changes nothing else.
+With no argument, show the current level and what changes at the other levels. With an argument: read `recipe-<new level>` (and `recipe-lite` step 5 when leaving Full), show the exact list of files and config that will change, get consent, back up before changing, then update the profile and verify. `/atlas level <current level>` re-runs that level's recipe and its verify block as a repair. Going from Lite straight to Pro is supported: follow `recipe-pro`, section *From Lite (direct)*, which builds one combined plan.
 <!-- /ATLAS-SECTION -->
 
 <!-- ATLAS-SECTION id="commands" tier="hot" -->
@@ -137,18 +138,19 @@ With no argument, show the current level and what changes at the other levels. W
 | `level [lite\|full\|pro]` | Show or change the level. |
 | `update [path-or-url]` | Update Atlas from its git repo (no argument) or from a file you point at. |
 | `report "what went wrong"` | Bundle a bug report from the current session. All levels. |
+| `board` | Pro: refresh the dashboard and print where to open it. |
 
 If a command needs a project and none was given, list the projects in the registry and ask which.
 
-**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/` (the project's own scaffold is the user's: ask whether to create it with their framework's tool, then leave it alone), `git init -b main`, branch `dev`, and an `atlas/` folder holding `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, and `files/` with `INDEX.md`. **Enforce project layout (see Project Layout):** if scaffolding creates a single wrapper directory containing the entire project, propose flattening to repo root with consent before registering branches/finalizing. Register it. At Full, also write the pointer files (`recipe-full`).
+**init.** Interview one question at a time, skipping anything already known: project type, one-line description, **original intent in the user's own words**, run and test commands, first DoD checks, project rules. Create no files until you have everything. Then: `Projects/<kebab-name>/` (the project's own scaffold is the user's: ask whether to create it with their framework's tool, then leave it alone), `git init -b main`, branch `dev`, and an `atlas/` folder holding `ATLAS.md` from `Config/templates/ATLAS.md`, `evidence/`, `docs/`, and `files/` with `INDEX.md`. **Enforce project layout (see Project Layout):** if scaffolding creates a single wrapper directory containing the entire project, propose flattening to repo root with consent before registering branches/finalizing. Register it. At Full, also write the pointer files (`recipe-full`). At Pro, also create `atlas/tasks.md` from `Config/templates/tasks.md`.
 
-**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `atlas/` and `atlas/ATLAS.md` if missing and touch nothing else in the project, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. **Enforce project layout (see Project Layout):** detect nested wrapper directories containing the entire project; if found, add to Atlas Doctor as `error` with a concrete move plan and require explicit consent before moving anything. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A root-level `ATLAS.md`, `evidence/`, `docs/` or `files/` (Atlas 1.x) stays valid; offer to move them into `atlas/` (move, never delete).
+**integrate.** Non-destructive. Work in place unless the user asks to move or copy the project into `Projects/`. Create `atlas/` and `atlas/ATLAS.md` if missing and touch nothing else in the project, inferring Purpose from README and git history. **Never invent Original Intent**: write `[ask the user]` and ask. Scan for: missing dirs, untracked evidence, no README, git not initialized, no run or test command, broken paths. **Enforce project layout (see Project Layout):** detect nested wrapper directories containing the entire project; if found, add to Atlas Doctor as `error` with a concrete move plan and require explicit consent before moving anything. Run the self-containment audit (read `self-containment`, mandatory). Fill Atlas Doctor, propose fixes. A root-level `ATLAS.md`, `evidence/`, `docs/` or `files/` (Atlas 1.x) stays valid; offer to move them into `atlas/` (move, never delete). At Pro, propose `atlas/tasks.md` cards from Next Steps, Blockers and Unverified items (`pro-tasks`).
 
 **resume.** Do not re-interview. Read `ATLAS.md`, then `Config/GLOBAL.md`. Run the Doctor checks. Compare Next Steps against Original Intent and Last Failure, and flag drift. Present a plan and **wait for confirmation** before changing anything.
 
-**status.** One project: read-only table. All projects: rebuild the registry from every `ATLAS.md`, then one row each: name, status, last worked on, branch, needs_review, blocked (y/n), next step.
+**status.** One project: read-only table. All projects: rebuild the registry from every `ATLAS.md`, then one row each: name, status, last worked on, branch, needs_review, blocked (y/n), next step. At Pro, also print task counts per column and the project's git facts (`pro-dashboard`), then refresh the dashboard.
 
-**wrap.** The end-of-session ritual, usable at every level. (1) Run the Evidence Gate. (2) Write the handoff into `ATLAS.md`: Status, Where I left off (1 to 3 sentences), **Last Failure** (verbatim error, command, date, or "none"), Next Steps, Blockers. (3) For each mistake or surprise this session, propose a Rule Ledger entry with its evidence; ask once, in a batch, and add approved ones as `unproven`. If a rule already exists in two or more projects, propose promoting it to `GLOBAL.md`. (4) Commit per the branch strategy and report.
+**wrap.** The end-of-session ritual, usable at every level. (1) Run the Evidence Gate. (2) Write the handoff into `ATLAS.md`: Status, Where I left off (1 to 3 sentences), **Last Failure** (verbatim error, command, date, or "none"), Next Steps, Blockers. (3) For each mistake or surprise this session, propose a Rule Ledger entry with its evidence; ask once, in a batch, and add approved ones as `unproven`. If a rule already exists in two or more projects, propose promoting it to `GLOBAL.md`. (4) Commit per the branch strategy and report. At Pro, also move task cards to match what happened and refresh the board (`pro-tasks`, `pro-dashboard`).
 
 **audit.** Audit this skill, templates, `GLOBAL.md` and the target project's `ATLAS.md` for drift. **Always check project layout (see Project Layout):** detect nested wrapper directories containing the entire project; if found, add/update Atlas Doctor entry as `error` with concrete move plan and require explicit consent before moving. Propose concrete edits with reasoning. Never edit `<workspace>/SKILL.md` without the user's approval of the specific diff. Must attempt falsification (`verification-integrity`).
 
@@ -159,6 +161,8 @@ If a command needs a project and none was given, list the projects in the regist
 **update.** Read the `update` section first. Always user-initiated; Atlas never checks for updates on its own. If there is no newer version, say so and change nothing.
 
 **report.** User-triggered, at every level. Write `Config/logs/reports/<YYYY-MM-DD-HHMM>-<slug>.md` holding: Atlas version and level; the host and model if known; the command or task; **expected versus actual in the user's words**; the relevant `atlas/ATLAS.md` excerpts (Status, Last Failure, Rule Ledger) and the names of the files in `atlas/evidence/`; `git status --short` and the last three commits of the project; anything that looked wrong afterwards. Redact secrets and tokens and replace the home path with `~`. Never upload anything: tell the user where the file is and let them decide what to share. Add `Config/logs/` to the workspace `.gitignore` (announced exception: show the line, ask).
+
+**board.** Pro only. Refresh every registered project's entry in `<workspace>/dashboard.html` per `pro-dashboard`, verify it, and print the path to open. Without `atlas/tasks.md` in a project, show that project from `ATLAS.md` and git alone and say it has no board yet.
 <!-- /ATLAS-SECTION -->
 
 <!-- ATLAS-SECTION id="session-contract" tier="hot" -->
@@ -172,6 +176,8 @@ Before **every commit** and before **ending the session**:
 2. Update the mutable `ATLAS.md` sections: Status (Last worked on, Where I left off, Branch, needs_review), Last Failure, Next Steps, Blockers, and Pass/Fail plus evidence path on DoD checks. Write `None` under Last Failure when there is none; leaving it untouched does not count. Fill the DoD Pass/Fail rows the change touched, each with what would have made it a Fail.
 3. Commit as `type(scope): description - evidence: <path>`.
 4. End your reply with one line: `Evidence: <paths> | Pass N | Fail N | Unverified N`.
+
+**At Pro** (when `atlas/tasks.md` exists) the same gate also moves task cards to match the evidence (`pro-tasks`) and refreshes this project's entry in `<workspace>/dashboard.html` (`pro-dashboard`). A failed refresh never blocks a commit: report it as `Unverified`.
 
 **Honest limits.** At Lite nothing enforces this: if you never named Atlas, it does not run. At Full, hooks block ending a session when code changed but `ATLAS.md` and `evidence/` did not, but a hook cannot judge whether the evidence is good. The Verification Integrity rules still apply to you.
 
@@ -272,6 +278,7 @@ Flag a violation if **any** of the following hold:
 ```
 <workspace>/                  # default ~/Documents/Atlas/, all visible, nothing hidden
 ├── SKILL.md                  # the original, complete file; the source of truth
+├── dashboard.html            # Pro: derived board, gitignored
 ├── Config/
 │   ├── profile.md            # level, host, workspace, source_sha256
 │   ├── GLOBAL.md             # personal + baseline rules
@@ -279,7 +286,7 @@ Flag a violation if **any** of the following hold:
 │   ├── updates/              # fetched update candidates (gitignored, user may remove)
 │   ├── legacy/               # backups of replaced SKILL.md versions and obsolete 1.x files
 │   ├── logs/                 # reports/ (gitignored); machine event logs may come later
-│   ├── templates/            # ATLAS.md, INDEX.md, pointer.md
+│   ├── templates/            # ATLAS.md, INDEX.md, pointer.md; Pro: tasks.md, dashboard.html
 │   ├── scripts/              # audit script; hooks/ at Full
 │   └── spec/                 # Full only: cold sections as separate files
 └── Projects/<name>/          # the user's project, laid out as its framework expects, plus .git
@@ -292,8 +299,15 @@ Flag a violation if **any** of the following hold:
 
 | Level | Host copy of the skill |
 |---|---|
-| Lite | Byte-identical copy of `<workspace>/SKILL.md`. Drift check: `diff`. |
+| Lite | The **trimmed copy**: every line of `<workspace>/SKILL.md` before the `## EMBEDDED ASSETS` heading, followed by the one-line pointer below. Drift check: regenerate it to a temp file and `diff` it against the host copy. |
 | Full | The lean core generated by extraction (`recipe-full`). Drift check: `source_sha256` in the profile must equal the current sha256 of `<workspace>/SKILL.md`; if not, re-extract. |
+
+**Generating the trimmed copy (Lite).** Run this, then back up any different existing host copy first (rail 2):
+
+```bash
+awk '/^## EMBEDDED ASSETS/{exit} {print}' "<workspace>/SKILL.md" > "<host-copy>"
+printf '%s\n' '> Embedded assets (templates, scripts, hook scripts, the dashboard template) are not in this copy. They live in the Atlas workspace SKILL.md after the "## EMBEDDED ASSETS" heading: read them there, never recreate them from memory.' >> "<host-copy>"
+```
 
 Find the host's skills directory from that host's documentation or ask the user; never hardcode or guess it. Edit the original and re-install; never edit the host copy. Never place a second skill named `atlas` anywhere the host discovers skills. Installing for one host must not disturb another's install. Back up an existing host copy to `SKILL.md.bak-<timestamp>` before replacing it.
 
@@ -306,13 +320,13 @@ The wrapper makes `/atlas` a registered command with autocomplete. Install it if
 
 ```markdown
 ---
-description: Atlas project memory - init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report
+description: Atlas project memory - init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report, board
 ---
 Load the `atlas` skill by name and run the user's command.
 
 User command: $ARGUMENTS
 
-The first word is the subcommand (init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report); the rest are its arguments. With no subcommand, run first boot or the workspace summary as the skill says. Default workspace is ~/Documents/Atlas/. Read ATLAS.md and Config/GLOBAL.md before changing anything.
+The first word is the subcommand (init, integrate, resume, status, wrap, audit, maintain, fix, level, update, report, board); the rest are its arguments. With no subcommand, run first boot or the workspace summary as the skill says. Default workspace is ~/Documents/Atlas/. Read ATLAS.md and Config/GLOBAL.md before changing anything.
 ```
 
 3. The wrapper must never contain an absolute path from another machine. If the host cannot load a skill by name, resolve the path **on this machine at install time**.
@@ -325,12 +339,12 @@ The first word is the subcommand (init, integrate, resume, status, wrap, audit, 
 Command-only. **Safe to run again:** skip what is already correct, repair what has drifted, never delete.
 
 1. Ensure `<workspace>/SKILL.md` is the complete original (rail 3).
-2. Host copy: a byte-identical copy of the original (back up a different existing one first). Install the wrapper per `install`.
+2. Host copy: the trimmed copy per `install` (back up a different existing one first). Install the wrapper per `install`.
 3. Write the embedded assets Lite needs per `materialize`. User-owned files are never overwritten.
 4. Set `level: lite`, `version` and `source_sha256` in the profile.
-5. **Leaving Full:** ask consent for the exact list, then disable, don't delete: rename the hook config entries or files to `*.disabled-<timestamp>`; per project, with consent, remove only the marked pointer block. Leave `Config/spec/` in place.
+5. **Leaving Full or Pro:** ask consent for the exact list, then disable, don't delete: rename the hook config entries or files to `*.disabled-<timestamp>`; per project, with consent, remove only the marked pointer block. Leave `Config/spec/` in place.
 
-**Verify (run these):** `diff` of host copy and original is empty; embed count and sha256 per rail 3; the Doctor installation check is clean.
+**Verify (run these):** the host copy equals a freshly generated trimmed copy (`diff` is empty), has no `ATLAS-EMBED` marker lines and ends with the pointer line; embed count and sha256 of the original per rail 3; the Doctor installation check is clean.
 <!-- /ATLAS-SECTION -->
 
 <!-- ATLAS-SECTION id="recipe-full" tier="cold" when="setting up, repairing or switching to Full, updating at Full, or running init/integrate at Full" -->
@@ -351,12 +365,101 @@ Full = lean core + on-demand spec files + hooks + pointer files. **Safe to run a
 <!-- /ATLAS-SECTION -->
 
 
-<!-- ATLAS-SECTION id="recipe-pro" tier="cold" when="the user asks about Pro or runs /atlas level pro" -->
-## Recipe: Pro (under development, not built)
+<!-- ATLAS-SECTION id="recipe-pro" tier="cold" when="setting up, repairing or switching to Pro (from Full or straight from Lite), updating at Pro, or running status, board or wrap at Pro" -->
+## Recipe: Pro
 
-Do not implement. If asked, say Pro is planned, stay at the current level, and set `pro_interest: true`.
+Pro = Full + task board + dashboard. **Safe to run again.** Needs git and a browser; no server and no other dependency. The level is workspace-wide (`Config/profile.md`); only the individual writes into a project (pointer blocks, `atlas/tasks.md`) are asked project by project.
 
-Planned scope: a local, self-contained HTML dashboard maintained by the agent: a main view of all projects (description, status, todos, progress, git stats) and a per-project view with a kanban board, all generated from `ATLAS.md` files and `registry.json`. In chat, the agent answers briefly and puts deeper explanation (diagrams, graphs) in the browser view to save tokens. Markdown stays the source of truth; the dashboard is derived, offline, and needs no server. Before borrowing visualization techniques from existing open-source repos, check their licences.
+### From Full
+
+1. Materialize `Config/templates/dashboard.html` and `Config/templates/tasks.md` per `materialize`.
+2. For each Atlas project without `atlas/tasks.md`: draft cards from Next Steps, Blockers and Unverified items per `pro-tasks`, show the draft, and write only what the user approves. A declined project stays task-less and is shown from `ATLAS.md` and git alone.
+3. Add `dashboard.html` to the workspace `.gitignore` (announced exception: show the line, ask).
+4. Generate `<workspace>/dashboard.html`: copy the template and fill its data block per `pro-dashboard`. Tell the user the path to open.
+5. Set `level: pro`, `version` and `source_sha256` in the profile.
+
+### From Lite (direct)
+
+Going straight from Lite to Pro is supported. Build **one combined plan**, show it once, and take the yeses group by group. Every consent rule in the Rails still applies; combining the plan only saves the user from reading two.
+
+| Group | What it does | Consent |
+|---|---|---|
+| A. Host copy and spec files | Back up the host copy, extract the lean core and `Config/spec/` (`recipe-full` steps 1 and 2). Required for Pro. | One yes |
+| B. Hooks | Hook scripts and their wiring (`recipe-full` steps 3 and 4), shown as diffs. Optional: Pro works without hooks, and the pointer blocks do the enforcing. | One yes, may be declined |
+| C. Pointer blocks | `recipe-full` step 5 for every project. | One yes **per project**; a declined project is not enforced and Doctor flags it |
+| D. Pro files | The steps under *From Full* above: templates, `.gitignore` line, task drafts (one yes per project), first dashboard. | As listed there |
+
+Apply A, B, C, D in that order. Set `level: pro`, `version` and `source_sha256` **once, at the end, after the verify block passes.** If the run stops midway, nothing is lost: every step is safe to repeat, the profile still says Lite, Doctor may warn that the host copy differs from the original until the run is finished, and `/atlas level pro` picks it up again.
+
+**Verify (run these):** the `recipe-full` verify block; the data block parses (or is recorded `Unverified` if no JSON parser exists); each project's counts match its `tasks.md`; the template outside the data block equals the embed; every Pro project has a `tasks.md` or a recorded refusal.
+
+**Leaving Pro** (to Full or Lite): leave `tasks.md` and `dashboard.html` in place (harmless, nothing is deleted), stop refreshing them, and set the level. Going on to Lite follows `recipe-lite` step 5.
+<!-- /ATLAS-SECTION -->
+
+<!-- ATLAS-SECTION id="pro-tasks" tier="cold" when="Pro: creating, moving or reading tasks; wrap, status, init or integrate at Pro" -->
+## Pro: Tasks
+
+`atlas/tasks.md` is the project's board. **The section a task sits in is its state**, and order within a section is priority, highest first.
+
+```markdown
+# Tasks
+
+## To do
+- Add a settings screen for the voice trigger | why: users asked for it
+- Resolve the missing voice action reference | blocked: the doc is not in the repo
+
+## Doing
+- Update the menubar visuals | branch: atlas/menubar-ui | started: 2026-10-24
+
+## Waiting on you
+- Check the notch pill on a real display | why: needs the other app running
+
+## Done
+- Wire compound routing into the live path | done: 2026-10-20 | evidence: atlas/evidence/a5.txt
+```
+
+1. **Write like a person.** A task is a short plain sentence, verb first, saying the outcome ("Update the menubar visuals", "Run tests for the new commands"), under about 70 characters. No ticket codes and no phase jargon unless the user uses it. Detail goes in `why:`.
+2. **The title is the key.** Titles are unique within a project. A task may be renamed; two tasks may not share a title.
+3. **Fields** follow the title after ` | ` as `key: value`: `why`, `branch`, `blocked`, `started` and `done` (ISO dates), `evidence`. Unknown keys are kept, never dropped. `blocked` is a field, not a column: a blocked card stays in its section and shows red.
+4. **Moves.** To do to Doing when work starts (set `started`, and `branch` if any). Doing to Waiting on you when the work is finished but something only the user can do remains: a review, a real-world check, a decision. Every `Unverified` evidence item that needs the user becomes a Waiting card. A task moves to Done **only with an `evidence:` path and a `done:` date**; no evidence, no Done.
+5. **Blockers.** Every item under Blockers in `ATLAS.md` appears as a `blocked:` field on the task it blocks; if no task fits, add one.
+6. **Next Steps stays the handoff.** At Pro, `wrap` regenerates `ATLAS.md` Next Steps from the top of Doing, then To do (3 to 5 titles), so an agent that never opens the board still gets a correct handoff. Do not edit the two apart; Doctor flags a mismatch.
+7. **Migration (per project, ask first).** Draft cards from the current Next Steps, Blockers and Unverified items. Rewrite machine-style names into plain sentences and show both versions. Write only what the user approves.
+8. Done is a record: nothing is deleted. Keep the file well-formed (no duplicate titles) and re-read it after every edit.
+<!-- /ATLAS-SECTION -->
+
+<!-- ATLAS-SECTION id="pro-dashboard" tier="cold" when="Pro: refreshing, verifying or explaining the dashboard; board, status or wrap at Pro" -->
+## Pro: Dashboard
+
+`<workspace>/dashboard.html` is a **derived** page. One fixed template (`Config/templates/dashboard.html`) renders everything in the browser from a single JSON block. The agent never edits the template's code, only that block. No server, no dependencies, no network: the user opens the file.
+
+**Data block.** Replace only the text between `<script type="application/json" id="atlas-data">` and its closing `</script>`. Every field is optional except `name`. Dates are ISO 8601.
+
+```json
+{ "generated": "2026-10-26T10:00:00Z",
+  "projects": [ {
+    "name": "reflex", "state": "In Progress", "needs_review": true,
+    "last_worked": "2026-10-18T09:30:00Z", "refreshed": "2026-10-26T10:00:00Z",
+    "left_off": "one or two sentences", "intent": "original intent, short", "last_failure": "None",
+    "git": { "branch": "atlas/menubar-ui", "uncommitted": 3, "ahead_of_dev": 2, "commits_7d": 5, "commits_30d": 14 },
+    "dod": { "pass": 8, "fail": 1, "unverified": 1, "total": 10 },
+    "blockers": ["Voice action reference doc is missing"],
+    "tasks": { "todo": [ {"title": "...", "why": "...", "blocked": "..."} ],
+               "doing": [ {"title": "...", "branch": "...", "started": "2026-10-24"} ],
+               "waiting": [ {"title": "...", "why": "..."} ],
+               "done": [ {"title": "...", "done": "2026-10-20"} ] } } ] }
+```
+
+**Facts come from commands, never from memory.** In the project root run: `git branch --show-current`; `git status --porcelain | wc -l`; `git rev-list --count dev..HEAD` (omit `ahead_of_dev` if there is no `dev`); `git log --since='7 days ago' --oneline | wc -l` and the same for 30 days. `last_worked`, `left_off`, `intent`, `last_failure`, `needs_review`, the DoD counts and `blockers` come from `atlas/ATLAS.md`; tasks from `atlas/tasks.md`.
+
+**Refresh rules.**
+1. **Full refresh** (`board`, `status` for all projects, `recipe-pro`): rebuild every registered project's entry and set `generated` and each `refreshed` to now.
+2. **Single-project refresh** (the Evidence Gate, `wrap`): read the existing block, replace only that project's entry, set its `refreshed` to now, and leave `generated` and the other entries alone, so the page never claims other projects are fresher than they are.
+3. Keep the block valid JSON: no comments, no trailing commas, and write `</` inside strings as `<\/`.
+4. **Verify after writing:** the block parses (use any JSON parser on hand, such as `python3 -m json.tool` or `node -e`; if there is none, record `Unverified`); each project's task counts equal the counts in its `tasks.md`; the template outside the block is identical to the embed in `<workspace>/SKILL.md`. A failed refresh never blocks a commit: report it.
+5. The file is derived and gitignored. Never commit it, and regenerate rather than merge.
+
+**How the page reads.** The overview opens with **Needs you** (waiting on you, blocked, review, last failure, no work for more than 10 days), then one card per project. Opening a project (`#<name>`) shows its board. Color means attention: gray to do, blue doing, amber waiting on you, red blocked, green done, and every state also carries a text label. Staleness is computed when the page opens, so "8 days ago" is right even if nobody refreshed it.
 <!-- /ATLAS-SECTION -->
 
 <!-- ATLAS-SECTION id="self-containment" tier="cold" when="integrate (mandatory), audit, maintain, or any relocation of a project" -->
@@ -485,6 +588,8 @@ No subagents on this host? Do the work yourself, then run a **separate verifier 
 
 One entry per version. Migration steps are non-destructive and are run by `update`; omit them when nothing moves or changes shape.
 
+- **2.6.0.** Pro is real. `recipe-pro` replaces the stub (and covers going straight from Lite with one combined plan): `atlas/tasks.md` (plain-language tasks; the section is the state), a dashboard at `<workspace>/dashboard.html` rendered by one fixed embedded template from a single JSON block (no server, no dependencies; staleness is computed when you open it), a `board` command, richer `status` and `wrap` at Pro, and a Pro step in the Evidence Gate. The `pro_interest` profile field is gone. Lite's host copy is now trimmed: it no longer carries the embedded assets block (about half the file) and ends with a one-line pointer to the workspace original, and its drift check compares against the regenerated trimmed copy. Migration (safe from 2.5.x, and safe to repeat): at Lite, replace the host copy with the trimmed copy (back up the old one first); at Full and Pro, refresh the pointer blocks per project with consent; at Pro only, draft `atlas/tasks.md` per project (ask), add `dashboard.html` to the workspace `.gitignore` (ask) and generate the dashboard.
+- **2.5.1 to 2.5.6.** Incremental releases published in git, including the Project Layout section. No migration steps are defined for them.
 - **2.5.0.** Level recipes (`recipe-lite`, `recipe-full`, `recipe-pro`) replace `full-setup`. `update` now follows the incoming file's recipe for your level and its Changelog migrations, under new hot **Rails** that live in the installed file. New `report` command. Feature branches start from `dev`. Explicit rules for clean list numbering, Last Failure and DoD rows. The embed count is the anchored `grep -c '^<!-- ATLAS-EMBED path='`. Migration (safe from 2.2.1 or later, and safe to repeat): add `Config/logs/` to the workspace `.gitignore` (ask); at Full, refresh stale pointer blocks per project with consent; verify the workspace original is complete (rail 3).
 - **2.3.0 to 2.4.0.** Incremental releases published in git. No migration steps are defined for them; the 2.5.0 migration covers them.
 - **2.2.1.** Full-level hardening: the workspace original is never replaced by the lean core; pointer files are mandatory and created when missing; hook detection looks for plugins and events, not just a hooks config. Migration: if `<workspace>/SKILL.md` has no `ATLAS-EMBED` blocks, restore the newest complete backup from `Config/legacy/`, set `source_sha256` to its sha256, then write any missing pointer blocks (consent) and re-verify.
@@ -506,6 +611,7 @@ This file is the single source. The on-disk `Config/` is a derived cache.
 2. Write only the assets a command needs: first boot writes all of them; `init` needs the templates; audits need the audit script; Full needs the hook scripts and `pointer.md`.
 3. Scripts get `chmod +x`. Hook scripts persist in `Config/scripts/hooks/`. Never delete a materialized file to "regenerate"; follow rule 1.
 4. `Config/registry.json` and `Config/profile.md` are live state, not embedded.
+5. A Lite host copy and a Full lean core omit this block. Read embedded assets from the workspace original, never from memory.
 <!-- /ATLAS-SECTION -->
 
 ---
@@ -586,6 +692,9 @@ Never save passwords, keys, tokens or secrets to any committed file; refuse and 
 | Level is Full but hooks or pointer files are missing | warn | audit, resume |
 | Workspace `SKILL.md` is a lean core (no `ATLAS-EMBED` blocks) or its sha256 differs from `source_sha256` | error | audit, level change, resume |
 | Pointer block differs from `Config/templates/pointer.md` | info | audit, update |
+| Pro: `tasks.md` and ATLAS.md Next Steps disagree, or a task is Done without an evidence path | warn | audit, maintain, board |
+| Pro: dashboard data block does not parse, or its counts differ from `tasks.md` | warn | board, audit |
+| Pro: dashboard older than 7 days | info | status, resume |
 | Rule Ledger entry with no origin evidence | info | maintain |
 
 Track every finding with Issue, Severity, Status, Suggested Fix, Last Checked (ISO 8601).
@@ -694,6 +803,8 @@ Evidence Gate, before every commit and before ending the session:
 2. Update `atlas/ATLAS.md`: Status, Last Failure, Next Steps, Blockers.
 3. Commit as `type(scope): description - evidence: <path>`.
 4. End your reply with: `Evidence: <paths> | Pass N | Fail N | Unverified N`.
+
+If `atlas/tasks.md` exists (Pro): also move its task cards to match the evidence and refresh this project's entry in the Atlas dashboard.
 
 Work on `atlas/<feature>` branches; never push to `dev` or `main`. Never delete anything without the user's explicit consent.
 <!-- atlas:end -->
@@ -848,4 +959,261 @@ touch "$marker" 2>/dev/null
 
 printf '%s\n' '{"decision":"block","reason":"Atlas Evidence Gate: code changed but neither ATLAS.md nor evidence/ was updated. Run the gate (write evidence, update Status, Last Failure and Next Steps), then finish."}'
 exit 0
+````
+
+<!-- ATLAS-EMBED path="Config/templates/tasks.md" -->
+````markdown
+# Tasks
+
+Write each task the way a person would say it: verb first, plain words, no codes. The section is the state; fields follow the title after ` | `.
+
+## To do
+- [Plain-language task] | why: [optional, one line]
+
+## Doing
+
+## Waiting on you
+
+## Done
+- [Finished task] | done: [YYYY-MM-DD] | evidence: [atlas/evidence/...]
+````
+
+<!-- ATLAS-EMBED path="Config/templates/dashboard.html" -->
+````html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Atlas dashboard</title>
+<style>
+:root{--bg:#f6f5f1;--card:#ffffff;--col:#efede7;--text:#1f1e1b;--muted:#6b6a64;--line:#d9d6cc;
+--todo-bg:#F1EFE8;--todo-fg:#444441;--todo:#888780;
+--doing-bg:#E6F1FB;--doing-fg:#0C447C;--doing:#378ADD;
+--wait-bg:#FAEEDA;--wait-fg:#633806;--wait:#EF9F27;
+--block-bg:#FCEBEB;--block-fg:#791F1F;--block:#E24B4A;
+--done-bg:#EAF3DE;--done-fg:#27500A;--done:#639922}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1b19;--card:#2a2926;--col:#232220;--text:#ecebe6;--muted:#a3a198;--line:#3a3935;
+--todo-bg:#2C2C2A;--todo-fg:#D3D1C7;--doing-bg:#042C53;--doing-fg:#B5D4F4;--wait-bg:#412402;--wait-fg:#FAC775;--block-bg:#501313;--block-fg:#F7C1C1;--done-bg:#173404;--done-fg:#C0DD97}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+h2{font-size:17px;font-weight:500;margin:28px 0 10px}
+a{color:inherit}
+.muted{color:var(--muted);font-size:13px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{display:inline-block;font-size:12px;padding:1px 9px;border-radius:99px;white-space:nowrap}
+.todo{background:var(--todo-bg);color:var(--todo-fg)}
+.doing{background:var(--doing-bg);color:var(--doing-fg)}
+.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.block{background:var(--block-bg);color:var(--block-fg)}
+.done{background:var(--done-bg);color:var(--done-fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+a.card{display:block;text-decoration:none}
+a.card:hover,a.card:focus-visible{border-color:var(--muted)}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;gap:2px;margin:10px 0 4px;background:var(--line)}
+.bar span{display:block}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start}
+@media (max-width:800px){.board{grid-template-columns:1fr}}
+.col{background:var(--col);border-radius:12px;padding:10px}
+.col h3{font-size:14px;font-weight:500;margin:2px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+.t{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:14px}
+.t.a-wait{border-color:var(--wait)}
+.t.a-block{border-color:var(--block)}
+.banner{border-radius:8px;padding:8px 12px;font-size:14px;margin-top:10px}
+.need{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.need:last-child{border-bottom:0}
+.back{display:inline-block;margin-bottom:12px;font-size:14px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script type="application/json" id="atlas-data">{"generated":null,"projects":[]}</script>
+<script>
+(function () {
+  var root = document.getElementById('app');
+  var D = null;
+  try { D = JSON.parse(document.getElementById('atlas-data').textContent); } catch (e) { D = null; }
+
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    attrs = attrs || {};
+    for (var k in attrs) {
+      if (k === 'class') e.className = attrs[k];
+      else if (k === 'text') e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return e;
+  }
+  function arr(x) { return Array.isArray(x) ? x : []; }
+  function days(iso) {
+    if (!iso) return null;
+    var t = Date.parse(iso);
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 864e5));
+  }
+  function ago(n) { return n === null ? 'never' : n === 0 ? 'today' : n === 1 ? '1 day ago' : n + ' days ago'; }
+  function ageClass(n) { return n === null ? 'todo' : n <= 3 ? 'done' : n <= 10 ? 'wait' : 'block'; }
+  function tk(p) { return p.tasks || {}; }
+  function counts(p) {
+    var t = tk(p);
+    return { todo: arr(t.todo).length, doing: arr(t.doing).length, waiting: arr(t.waiting).length, done: arr(t.done).length };
+  }
+  function blocked(p) {
+    var out = [];
+    ['todo', 'doing', 'waiting'].forEach(function (k) {
+      arr(tk(p)[k]).forEach(function (x) { if (x && x.blocked) out.push(x); });
+    });
+    return out;
+  }
+  function nonePresent(s) { return s && String(s).trim() && String(s).trim().toLowerCase() !== 'none'; }
+
+  function bar(c) {
+    var total = c.done + c.doing + c.waiting + c.todo;
+    var b = h('div', { class: 'bar', role: 'img', 'aria-label': c.done + ' done, ' + c.doing + ' doing, ' + c.waiting + ' waiting on you, ' + c.todo + ' to do' });
+    if (!total) return b;
+    [['done', c.done], ['doing', c.doing], ['wait', c.waiting], ['todo', c.todo]].forEach(function (s) {
+      if (s[1]) { var sp = h('span', { style: 'flex:' + s[1] + ';background:var(--' + s[0] + ')' }); b.appendChild(sp); }
+    });
+    return b;
+  }
+  function countsText(p) {
+    var c = counts(p), nb = blocked(p).length;
+    return c.done + ' done, ' + c.doing + ' doing, ' + c.waiting + ' waiting on you, ' + c.todo + ' to do' + (nb ? ', ' + nb + ' blocked' : '');
+  }
+  function gitLine(p) {
+    var g = p.git || {}, bits = [];
+    if (g.branch) bits.push(g.branch);
+    if (typeof g.uncommitted === 'number') bits.push(g.uncommitted + ' uncommitted file' + (g.uncommitted === 1 ? '' : 's'));
+    if (typeof g.ahead_of_dev === 'number') bits.push(g.ahead_of_dev + ' commit' + (g.ahead_of_dev === 1 ? '' : 's') + ' ahead of dev');
+    if (typeof g.commits_30d === 'number') bits.push(g.commits_30d + ' commits in 30 days');
+    return bits.join('  \u00b7  ');
+  }
+  function needs(projects) {
+    var out = [];
+    projects.forEach(function (p) {
+      arr(tk(p).waiting).forEach(function (x) { out.push({ k: 'wait', tag: 'Waiting on you', text: x.title, p: p.name }); });
+      blocked(p).forEach(function (x) { out.push({ k: 'block', tag: 'Blocked', text: x.title + ': ' + x.blocked, p: p.name }); });
+      if (p.needs_review) out.push({ k: 'wait', tag: 'Review', text: 'Branch ' + ((p.git || {}).branch || '') + ' is waiting for your review', p: p.name });
+      if (nonePresent(p.last_failure)) out.push({ k: 'block', tag: 'Last failure', text: p.last_failure, p: p.name });
+      var d = days(p.last_worked);
+      if (d !== null && d > 10) out.push({ k: 'block', tag: 'Stale', text: 'No work for ' + d + ' days', p: p.name });
+    });
+    return out;
+  }
+
+  function overview() {
+    var ps = arr(D.projects), g = days(D.generated), kids = [];
+    kids.push(h('h1', { text: 'Atlas' }));
+    var meta = h('div', { class: 'row' }, h('span', { class: 'muted', text: 'Refreshed ' + ago(g) }));
+    if (g === null || g > 7) meta.appendChild(h('span', { class: 'pill wait', text: 'Data may be out of date: ask the agent to refresh the dashboard' }));
+    kids.push(meta);
+    if (!ps.length) { kids.push(h('p', { class: 'muted', text: 'No projects yet. Ask the agent to refresh the dashboard.' })); return kids; }
+    kids.push(h('h2', { text: 'Needs you' }));
+    var n = needs(ps), box = h('div', { class: 'card' });
+    if (!n.length) box.appendChild(h('span', { class: 'muted', text: 'Nothing is waiting on you.' }));
+    n.forEach(function (x) {
+      box.appendChild(h('div', { class: 'need' },
+        h('span', { class: 'pill ' + x.k, text: x.tag }),
+        h('span', { text: x.text }),
+        h('a', { class: 'muted', href: '#' + encodeURIComponent(x.p), text: x.p })));
+    });
+    kids.push(box);
+    kids.push(h('h2', { text: 'Projects' }));
+    var grid = h('div', { class: 'grid' });
+    ps.forEach(function (p) {
+      var c = counts(p), d = days(p.last_worked), next = arr(tk(p).doing)[0] || arr(tk(p).todo)[0];
+      grid.appendChild(h('a', { class: 'card', href: '#' + encodeURIComponent(p.name) },
+        h('div', { class: 'row' },
+          h('strong', { text: p.name }),
+          p.state ? h('span', { class: 'pill doing', text: p.state }) : null,
+          h('span', { class: 'pill ' + ageClass(d), text: 'Last worked ' + ago(d) })),
+        bar(c),
+        h('div', { class: 'muted', text: countsText(p) }),
+        p.left_off ? h('p', { style: 'margin:10px 0 0', text: p.left_off }) : null,
+        next ? h('p', { class: 'muted', style: 'margin:6px 0 0', text: 'Next up: ' + next.title }) : null,
+        h('p', { class: 'muted', style: 'margin:8px 0 0', text: gitLine(p) }),
+        p.refreshed ? h('p', { class: 'muted', style: 'margin:2px 0 0', text: 'Board updated ' + ago(days(p.refreshed)) }) : null));
+    });
+    kids.push(grid);
+    return kids;
+  }
+
+  function column(title, cls, items, attn, cap) {
+    var col = h('div', { class: 'col' }, h('h3', null, h('span', { text: title }), h('span', { class: 'pill ' + cls, text: String(items.length) })));
+    var shown = cap ? items.slice(0, cap) : items;
+    shown.forEach(function (x) {
+      var t = h('div', { class: 't' + (x.blocked ? ' a-block' : attn ? ' a-wait' : '') }, h('div', { text: x.title }));
+      if (x.why) t.appendChild(h('div', { class: 'muted', text: x.why }));
+      if (x.branch) t.appendChild(h('div', { class: 'muted', text: 'Branch: ' + x.branch }));
+      if (x.started && cls === 'doing') t.appendChild(h('div', { class: 'muted', text: 'Started ' + ago(days(x.started)) }));
+      if (x.done) t.appendChild(h('div', { class: 'muted', text: x.done }));
+      if (x.blocked) t.appendChild(h('div', null, h('span', { class: 'pill block', text: 'Blocked: ' + x.blocked })));
+      col.appendChild(t);
+    });
+    if (cap && items.length > cap) col.appendChild(h('div', { class: 'muted', text: 'and ' + (items.length - cap) + ' more' }));
+    return col;
+  }
+
+  function project(p) {
+    var kids = [], d = days(p.last_worked), c = counts(p), t = tk(p);
+    kids.push(h('a', { class: 'back', href: '#', text: 'All projects' }));
+    kids.push(h('div', { class: 'row' },
+      h('h1', { text: p.name }),
+      p.state ? h('span', { class: 'pill doing', text: p.state }) : null,
+      h('span', { class: 'pill ' + ageClass(d), text: 'Last worked ' + ago(d) }),
+      p.needs_review ? h('span', { class: 'pill wait', text: 'Needs your review' }) : null));
+    if (p.left_off) kids.push(h('p', { text: 'Where I left off: ' + p.left_off }));
+    if (p.intent) kids.push(h('p', { class: 'muted', text: 'Original intent: ' + p.intent }));
+    if (nonePresent(p.last_failure)) kids.push(h('div', { class: 'banner block', text: 'Last failure: ' + p.last_failure }));
+    kids.push(bar(c));
+    kids.push(h('div', { class: 'muted', text: countsText(p) }));
+    kids.push(h('h2', { text: 'Board' }));
+    var done = arr(t.done).slice().sort(function (a, b) { return String(b.done || '').localeCompare(String(a.done || '')); });
+    kids.push(h('div', { class: 'board' },
+      column('To do', 'todo', arr(t.todo), false),
+      column('Doing', 'doing', arr(t.doing), false),
+      column('Waiting on you', 'wait', arr(t.waiting), true),
+      column('Done', 'done', done, false, 6)));
+    var dod = p.dod;
+    if (dod && typeof dod.total === 'number') kids.push(h('p', { class: 'muted', text: 'Definition of Done: ' + dod.pass + ' of ' + dod.total + ' passing, ' + dod.fail + ' failing, ' + dod.unverified + ' unverified' }));
+    if (arr(p.blockers).length) {
+      kids.push(h('h2', { text: 'Blockers' }));
+      var ul = h('ul');
+      arr(p.blockers).forEach(function (b) { ul.appendChild(h('li', { text: String(b) })); });
+      kids.push(ul);
+    }
+    kids.push(h('p', { class: 'muted', text: gitLine(p) }));
+    if (p.refreshed) kids.push(h('p', { class: 'muted', text: 'Board updated ' + ago(days(p.refreshed)) }));
+    return kids;
+  }
+
+  function render() {
+    while (root.firstChild) root.removeChild(root.firstChild);
+    var kids;
+    if (!D || !Array.isArray(D.projects)) {
+      kids = [h('h1', { text: 'Atlas' }), h('p', { class: 'muted', text: 'The data block could not be read. Ask the agent to refresh the dashboard.' })];
+    } else {
+      var name = '';
+      try { name = decodeURIComponent(location.hash.slice(1)); } catch (e) { name = ''; }
+      var p = null;
+      D.projects.forEach(function (x) { if (x && x.name === name) p = x; });
+      kids = p ? project(p) : overview();
+    }
+    kids.forEach(function (k) { root.appendChild(k); });
+  }
+  window.addEventListener('hashchange', render);
+  render();
+})();
+</script>
+</body>
+</html>
 ````
